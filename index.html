@@ -1,0 +1,381 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SNAP Statement Builder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="SNAP Insurance — Statement Builder (Modotech-ready note)">
+  <style>
+    .card { box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+    .chip { border-radius: 9999px; padding: 2px 8px; background: #f1f5f9; font-size: 12px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; }
+  </style>
+</head>
+<body class="bg-zinc-50 text-zinc-800">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="mb-6">
+      <h1 class="text-2xl font-semibold">SNAP Statement Builder</h1>
+      <p class="text-sm text-zinc-600">Fill the fields → copy the generated note → paste into Modotech.</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Form column -->
+      <section class="bg-white rounded-2xl p-5 card">
+        <h2 class="text-lg font-semibold mb-3">Caller & Loss Basics</h2>
+        <div class="grid grid-cols-12 gap-3">
+          <div class="col-span-12 sm:col-span-6">
+            <label class="text-sm text-zinc-700">Rep Name</label>
+            <input id="repName" class="w-full border rounded-lg p-2" placeholder="Your name"/>
+          </div>
+          <div class="col-span-12 sm:col-span-6">
+            <label class="text-sm text-zinc-700">Party Type</label>
+            <select id="partyType" class="w-full border rounded-lg p-2">
+              <option value="">Select…</option>
+              <option>INSD</option>
+              <option>DRV</option>
+              <option>CLMT</option>
+              <option>PASS</option>
+            </select>
+          </div>
+
+          <div class="col-span-12 sm:col-span-6">
+            <label class="text-sm text-zinc-700">Name</label>
+            <input id="partyName" class="w-full border rounded-lg p-2" placeholder="Their name"/>
+          </div>
+          <div class="col-span-12 sm:col-span-6">
+            <label class="text-sm text-zinc-700">Primary Language</label>
+            <input id="language" class="w-full border rounded-lg p-2" placeholder="English / Spanish"/>
+          </div>
+
+          <div class="col-span-12">
+            <label class="text-sm text-zinc-700">Address</label>
+            <input id="address" class="w-full border rounded-lg p-2" placeholder="Street, City, ST"/>
+          </div>
+
+          <div class="col-span-6">
+            <label class="text-sm text-zinc-700">Phone</label>
+            <input id="phone" class="w-full border rounded-lg p-2" placeholder="(555) 555-5555"/>
+          </div>
+          <div class="col-span-6">
+            <label class="text-sm text-zinc-700">Email</label>
+            <input id="email" class="w-full border rounded-lg p-2" placeholder="name@email.com"/>
+          </div>
+
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">DOB</label>
+            <input id="dob" type="date" class="w-full border rounded-lg p-2"/>
+          </div>
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">DL # / State</label>
+            <input id="dl" class="w-full border rounded-lg p-2" placeholder="A1234567 / CA"/>
+          </div>
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">License Status</label>
+            <select id="dlStatus" class="w-full border rounded-lg p-2">
+              <option value="">Select…</option>
+              <option>Valid</option>
+              <option>Suspended</option>
+              <option>Expired</option>
+            </select>
+          </div>
+
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">Date of Loss</label>
+            <input id="dol" type="date" class="w-full border rounded-lg p-2"/>
+          </div>
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">Time of Loss</label>
+            <input id="tol" type="time" class="w-full border rounded-lg p-2"/>
+          </div>
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">AX Location</label>
+            <input id="axLocation" class="w-full border rounded-lg p-2" placeholder="Street / Intersection"/>
+          </div>
+        </div>
+
+        <hr class="my-5"/>
+
+        <h2 class="text-lg font-semibold mb-3">Scene & Police</h2>
+        <div class="grid grid-cols-12 gap-3">
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">Police Called</label>
+            <select id="policeCalled" class="w-full border rounded-lg p-2"><option></option><option>Yes</option><option>No</option></select>
+          </div>
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">Report #</label>
+            <input id="reportNo" class="w-full border rounded-lg p-2"/>
+          </div>
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">Citations</label>
+            <input id="citations" class="w-full border rounded-lg p-2"/>
+          </div>
+          <div class="col-span-12">
+            <label class="text-sm text-zinc-700">Weather</label>
+            <input id="weather" class="w-full border rounded-lg p-2" placeholder="Clear / Dry / Raining"/>
+          </div>
+        </div>
+
+        <hr class="my-5"/>
+
+        <h2 class="text-lg font-semibold mb-3">Insured Vehicle (IV)</h2>
+        <div class="grid grid-cols-12 gap-3">
+          <div class="col-span-6">
+            <label class="text-sm text-zinc-700">IV Description (Yr / Make / Model / Color)</label>
+            <input id="ivDesc" class="w-full border rounded-lg p-2"/>
+          </div>
+          <div class="col-span-6">
+            <label class="text-sm text-zinc-700">IV POI (Point of impact)</label>
+            <input id="ivPoi" class="w-full border rounded-lg p-2"/>
+          </div>
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">Backup Camera</label>
+            <select id="backupCam" class="w-full border rounded-lg p-2"><option></option><option>Yes</option><option>No</option></select>
+          </div>
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">Using Backup Cam at TOL</label>
+            <select id="usingBackupCam" class="w-full border rounded-lg p-2"><option></option><option>Yes</option><option>No</option></select>
+          </div>
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">IV Driven/Towed</label>
+            <input id="ivTow" class="w-full border rounded-lg p-2" placeholder="Driven away / Towed"/>
+          </div>
+          <div class="col-span-4">
+            <label class="text-sm text-zinc-700">IV Airbags Deploy</label>
+            <select id="ivAirbags" class="w-full border rounded-lg p-2"><option></option><option>Yes</option><option>No</option></select>
+          </div>
+          <div class="col-span-8">
+            <label class="text-sm text-zinc-700">Prior Accidents/Damage</label>
+            <input id="ivPriorDamage" class="w-full border rounded-lg p-2"/>
+          </div>
+          <div class="col-span-6">
+            <label class="text-sm text-zinc-700">IV Owner(s)</label>
+            <input id="ivo" class="w-full border rounded-lg p-2"/>
+          </div>
+          <div class="col-span-6">
+            <label class="text-sm text-zinc-700">Lienholder (if any)</label>
+            <input id="lienholder" class="w-full border rounded-lg p-2"/>
+          </div>
+        </div>
+
+        <hr class="my-5"/>
+
+        <h2 class="text-lg font-semibold mb-3">Other Vehicle(s) / Property</h2>
+        <div id="cvList" class="space-y-3"></div>
+        <button id="addCv" class="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border bg-white hover:bg-zinc-50">+ Add Vehicle</button>
+
+        <hr class="my-5"/>
+
+        <h2 class="text-lg font-semibold mb-3">Narrative & Extras</h2>
+        <div class="grid grid-cols-12 gap-3">
+          <div class="col-span-6">
+            <label class="text-sm text-zinc-700">Devices in use (dashcam/phone/GPS)</label>
+            <input id="devices" class="w-full border rounded-lg p-2"/>
+          </div>
+          <div class="col-span-6">
+            <label class="text-sm text-zinc-700">Evasive action taken</label>
+            <input id="evasive" class="w-full border rounded-lg p-2"/>
+          </div>
+          <div class="col-span-12">
+            <label class="text-sm text-zinc-700">Narrative (how the accident happened)</label>
+            <textarea id="howHappened" class="w-full border rounded-lg p-2" rows="4" placeholder="In your own words..."></textarea>
+          </div>
+        </div>
+
+        <div class="mt-6 flex items-center gap-3">
+          <button id="clearAll" class="px-3 py-2 rounded-xl border bg-white hover:bg-zinc-50">Clear</button>
+          <span class="text-xs text-zinc-500">Tip: Tab moves to the next field. Everything updates the note on the right automatically.</span>
+        </div>
+      </section>
+
+      <!-- Output column -->
+      <section class="bg-white rounded-2xl p-5 card">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-lg font-semibold">Generated Modotech Note</h2>
+          <button id="copyBtn" class="px-3 py-2 rounded-2xl bg-zinc-900 text-white hover:bg-zinc-800">Copy</button>
+        </div>
+        <textarea id="note" class="mono w-full h-[640px] border rounded-xl p-3"></textarea>
+
+        <div class="mt-3 text-xs text-zinc-500">
+          After copying, paste this text into Modotech. Include: <span class="chip">OBC/IBC label</span> and <span class="chip">Task Adjuster</span> as needed.
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <template id="cvTemplate">
+    <div class="border rounded-xl p-3 bg-zinc-50">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-sm font-medium">CV</div>
+        <button class="removeCv text-sm text-zinc-600 hover:text-zinc-900">Remove</button>
+      </div>
+      <div class="grid grid-cols-12 gap-3">
+        <div class="col-span-6">
+          <label class="text-sm text-zinc-700">CV (Yr/Make/Model/Color)</label>
+          <input data-k="cvDesc" class="w-full border rounded-lg p-2"/>
+        </div>
+        <div class="col-span-6">
+          <label class="text-sm text-zinc-700">CV POI</label>
+          <input data-k="cvPoi" class="w-full border rounded-lg p-2"/>
+        </div>
+        <div class="col-span-4">
+          <label class="text-sm text-zinc-700">Airbags</label>
+          <input data-k="cvAirbags" class="w-full border rounded-lg p-2" placeholder="Yes/No"/>
+        </div>
+        <div class="col-span-4">
+          <label class="text-sm text-zinc-700">Driven/Towed</label>
+          <input data-k="cvTow" class="w-full border rounded-lg p-2"/>
+        </div>
+        <div class="col-span-4">
+          <label class="text-sm text-zinc-700">Prior Damage</label>
+          <input data-k="cvPriorDamage" class="w-full border rounded-lg p-2"/>
+        </div>
+        <div class="col-span-6">
+          <label class="text-sm text-zinc-700">Owner(s)</label>
+          <input data-k="cvo" class="w-full border rounded-lg p-2"/>
+        </div>
+        <div class="col-span-6">
+          <label class="text-sm text-zinc-700">Driver</label>
+          <input data-k="cvd" class="w-full border rounded-lg p-2"/>
+        </div>
+        <div class="col-span-12">
+          <label class="text-sm text-zinc-700">Passengers</label>
+          <input data-k="cvPassengers" class="w-full border rounded-lg p-2"/>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const F = (id) => document.getElementById(id);
+    const fields = [
+      'repName','partyType','partyName','language','address','phone','email','dob','dl','dlStatus',
+      'dol','tol','axLocation','policeCalled','reportNo','citations','weather',
+      'ivDesc','ivPoi','backupCam','usingBackupCam','ivTow','ivAirbags','ivPriorDamage','ivo','lienholder',
+      'devices','evasive','howHappened'
+    ];
+
+    const state = {};
+    const cvList = [];
+
+    const updateState = () => {
+      fields.forEach(k => state[k] = F(k)?.value || '');
+      state.cvs = cvList.map(wrap => {
+        const o = {};
+        wrap.querySelectorAll('[data-k]').forEach(inp => o[inp.dataset.k] = inp.value);
+        return o;
+      });
+      F('note').value = generateNote(state);
+    };
+
+    fields.forEach(k => F(k)?.addEventListener('input', updateState));
+
+    const addCv = () => {
+      const tmpl = F('cvTemplate').content.cloneNode(true);
+      const wrapper = document.createElement('div');
+      wrapper.appendChild(tmpl);
+      const inner = wrapper.firstElementChild;
+      F('cvList').appendChild(inner);
+      cvList.push(inner);
+      inner.querySelector('.removeCv').addEventListener('click', () => {
+        const idx = cvList.indexOf(inner);
+        if (idx >= 0) cvList.splice(idx,1);
+        inner.remove();
+        updateState();
+      });
+      inner.querySelectorAll('input').forEach(inp => inp.addEventListener('input', updateState));
+      updateState();
+    };
+
+    F('addCv').addEventListener('click', addCv);
+    F('clearAll').addEventListener('click', () => {
+      document.querySelectorAll('input, textarea, select').forEach(el => { if(el.type!=='button') el.value=''; });
+      F('cvList').innerHTML = '';
+      cvList.length = 0;
+      updateState();
+    });
+
+    F('copyBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(F('note').value);
+        const btn = F('copyBtn');
+        const old = btn.textContent;
+        btn.textContent = 'Copied';
+        setTimeout(()=> btn.textContent = old, 1000);
+      } catch(e) {
+        alert('Copy failed. Select the text and press Ctrl+C.');
+      }
+    });
+
+    function add(label, val, lines){ if(val) lines.push(label + ': ' + val); }
+
+    function generateNote(s){
+      const lines = [];
+      lines.push(`This is ${s.repName || '[Rep Name]'} with Snap Insurance on a recorded line needing to obtain a statement from ${s.partyName || '[Name]'}, do I have your permission to proceed with this statement.`);
+      lines.push('');
+      lines.push('STATEMENT TEMPLATE:');
+      lines.push('PLACED CALL TO INSURED/DRIVER:');
+      lines.push('');
+
+      add('Party Type', s.partyType, lines);
+      add('Name', s.partyName, lines);
+      add('Primary Language', s.language, lines);
+      add('Address', s.address, lines);
+      add('Phone', s.phone, lines);
+      add('Email', s.email, lines);
+      add('DOB', s.dob, lines);
+      add('DL', s.dl, lines);
+      add('License Status', s.dlStatus, lines);
+      add('DOL', s.dol, lines);
+      add('TOL', s.tol, lines);
+      add('AX Location', s.axLocation, lines);
+      add('Police Called', s.policeCalled, lines);
+      add('Report#', s.reportNo, lines);
+      add('Citations', s.citations, lines);
+      add('Weather', s.weather, lines);
+
+      add('IV', s.ivDesc, lines);
+      add('IV POI', s.ivPoi, lines);
+      add('Backup Camera', s.backupCam, lines);
+      add('Using Backup Cam', s.usingBackupCam, lines);
+      add('IV Driven/Towed', s.ivTow, lines);
+      add('IV Airbags', s.ivAirbags, lines);
+      add('IV Prior Damage', s.ivPriorDamage, lines);
+      add('IV Owner(s)', s.ivo, lines);
+      add('Lienholder', s.lienholder, lines);
+
+      if (s.cvs && s.cvs.length){
+        lines.push('');
+        lines.push('OTHER VEHICLE(S) / PROPERTY:');
+        s.cvs.forEach((cv, i) => {
+          lines.push(`CV#${i+1} — ${cv.cvDesc || '[Yr/Make/Model/Color]'} `);
+          add('  CV POI', cv.cvPoi, lines);
+          add('  Airbags', cv.cvAirbags, lines);
+          add('  Driven/Towed', cv.cvTow, lines);
+          add('  Prior Damage', cv.cvPriorDamage, lines);
+          add('  Owner(s)', cv.cvo, lines);
+          add('  Driver', cv.cvd, lines);
+          add('  Passengers', cv.cvPassengers, lines);
+        });
+      }
+
+      lines.push('');
+      add('Devices in Use', s.devices, lines);
+      add('Evasive Action', s.evasive, lines);
+      lines.push('');
+      add('Narrative', s.howHappened, lines);
+
+      lines.push('');
+      lines.push('REQUEST SCENE PHOTOS/VEH PHOTOS/PR COPY/ REQ IV PICS FROM INSD');
+      lines.push('> Upload your statement to file – CLM# – INSD/CLMT/ULD STMT – NAME.');
+      lines.push('> Task the adjuster: NEW TASK → STATEMENT IN FILE – PLEASE REVIEW.');
+
+      return lines.join('\\n');
+    }
+
+    // Initialize
+    updateState();
+  </script>
+</body>
+</html>
