@@ -1,0 +1,7 @@
+# Netlify: static site from the repo root, plus the AI fill backend.
+# The manual form stays at / and the AI Statement Builder is at /ai/.
+# Set ANTHROPIC_API_KEY under Site configuration > Environment variables.
+[build]
+  publish = "."
+  command = "echo 'Static site - no build needed'"
+  edge_functions = "netlify/edge-functions"

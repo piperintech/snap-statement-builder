@@ -1,0 +1,332 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "lastUpdated": "2026-08-12",
+    "organization": "SNAP Insurance Service LLC",
+    "regions": [
+      "Texas",
+      "New Mexico"
+    ],
+    "languages": [
+      "English",
+      "Spanish"
+    ],
+    "maintainer": "Manu (Manuela Gonzalez)",
+    "description": "RAG Knowledge Base for SNAP Insurance claims translation and summarization. Grows with every claim processed."
+  },
+  "vocabulary": {
+    "core_abbreviations": [
+      {
+        "abbr": "IV",
+        "full": "Insured Vehicle",
+        "context": "The vehicle owned by SNAP's client (the insured)",
+        "examples": [
+          "IV 2018 Honda Civic, driver side damage"
+        ]
+      },
+      {
+        "abbr": "CV",
+        "full": "Claimant Vehicle",
+        "context": "The other party's vehicle involved in the claim",
+        "examples": [
+          "CV 2014 Mitsubishi Lancer, no visible damage"
+        ]
+      },
+      {
+        "abbr": "R/E",
+        "full": "Rear Ended",
+        "context": "Impact type - vehicle hit from behind",
+        "examples": [
+          "IV R/E CV at red light"
+        ]
+      },
+      {
+        "abbr": "CLMT",
+        "full": "Claimant",
+        "context": "The other party making the claim against SNAP's insured",
+        "examples": [
+          "CLMT stated brakes failed"
+        ]
+      },
+      {
+        "abbr": "INSD",
+        "full": "Insured",
+        "context": "SNAP's client, the policyholder",
+        "examples": [
+          "INSD denies liability"
+        ]
+      },
+      {
+        "abbr": "PSGR",
+        "full": "Passenger",
+        "context": "Person riding in a vehicle (not driver)",
+        "examples": [
+          "CV had 2 PSGRs"
+        ]
+      },
+      {
+        "abbr": "PKG LOT",
+        "full": "Parking Lot",
+        "context": "Loss occurred in a parking area",
+        "examples": [
+          "IV hit CV in PKG LOT at Walmart"
+        ]
+      },
+      {
+        "abbr": "APTS",
+        "full": "Apartments",
+        "context": "Loss at residential complex",
+        "examples": [
+          "Incident at APTS on Mockingbird Lane"
+        ]
+      },
+      {
+        "abbr": "UNINS",
+        "full": "Uninsured",
+        "context": "Other party has no insurance",
+        "examples": [
+          "CV driver UNINS, fled scene"
+        ]
+      },
+      {
+        "abbr": "UNDERINS",
+        "full": "Underinsured",
+        "context": "Other party's limits insufficient for damages",
+        "examples": [
+          "CV driver UNDERINS with only $15K limits"
+        ]
+      },
+      {
+        "abbr": "DRVR SIDE",
+        "full": "Driver Side",
+        "context": "Left side of vehicle (US)",
+        "examples": [
+          "Impact to DRVR SIDE door"
+        ]
+      },
+      {
+        "abbr": "PASS SIDE",
+        "full": "Passenger Side",
+        "context": "Right side of vehicle (US)",
+        "examples": [
+          "PASS SIDE mirror broken"
+        ]
+      },
+      {
+        "abbr": "LNS",
+        "full": "Lanes",
+        "context": "Road lanes, used for location description",
+        "examples": [
+          "Incident in 3rd LNS of I-635"
+        ]
+      },
+      {
+        "abbr": "VEHS",
+        "full": "Vehicles",
+        "context": "Plural of vehicle",
+        "examples": [
+          "3 VEHS involved, multi-vehicle incident"
+        ]
+      },
+      {
+        "abbr": "SUBR",
+        "full": "Subrogation",
+        "context": "Right to pursue other at-fault party",
+        "examples": [
+          "SUBR opportunity w/ rental company"
+        ]
+      }
+    ],
+    "incident_types": [
+      {
+        "type": "Rear-End Collision",
+        "pattern": "IV R/E CV - CLMT/INSD STATED [cause]",
+        "characteristics": [
+          "Straightforward liability (rear vehicle at fault)",
+          "Common on highways and intersections",
+          "Usually clear causation"
+        ],
+        "common_context": "Most common claim type; often low-fault disputes"
+      },
+      {
+        "type": "Parking Lot Collision",
+        "pattern": "IV HIT CV IN PKG LOT - [LOCATION]",
+        "characteristics": [
+          "Low-speed impacts",
+          "Often witnessed by multiple parties",
+          "Parking lot rules/signage may apply"
+        ],
+        "common_context": "Typically low damages but can be contentious over fault"
+      },
+      {
+        "type": "Hit and Run",
+        "pattern": "IV HIT BY UNKNOWN CV - CLMT FLED SCENE",
+        "characteristics": [
+          "No fleeing driver contact info",
+          "Police report likely",
+          "May involve uninsured motorist coverage"
+        ],
+        "common_context": "Escalates claim complexity; requires UIM/UM investigation"
+      },
+      {
+        "type": "Intersection Collision",
+        "pattern": "IV STRUCK BY CV AT [INTERSECTION] - [SIGNAL STATUS]",
+        "characteristics": [
+          "Multi-directional impact",
+          "Signal status critical (red/green/yellow)",
+          "Witness statements important"
+        ],
+        "common_context": "Fault often disputed; requires traffic analysis"
+      },
+      {
+        "type": "Lane Change Collision",
+        "pattern": "CV CHANGED LANES INTO IV - CLMT CLAIMED BLIND SPOT",
+        "characteristics": [
+          "Changing vehicle at fault in most jurisdictions",
+          "Mirror/blind spot awareness key",
+          "Requires vehicle positioning clarity"
+        ],
+        "common_context": "Clear liability pattern but claimants often dispute"
+      },
+      {
+        "type": "Backing Up Collision",
+        "pattern": "IV BACKED UP INTO CV - AT [LOCATION]",
+        "characteristics": [
+          "Backing vehicle typically at fault",
+          "Parking lot or driveway common",
+          "Duty to look/reverse safely"
+        ],
+        "common_context": "Low-value but clear liability for IV"
+      },
+      {
+        "type": "Border/International Incident",
+        "pattern": "INCIDENT AT MEXICO BORDER - [CITY/BRIDGE]",
+        "characteristics": [
+          "Uninsured drivers common",
+          "Unusual law enforcement protocols",
+          "Currency/jurisdiction complexity",
+          "Possible bribery or corruption"
+        ],
+        "common_context": "High risk; requires special handling, consulate involvement"
+      },
+      {
+        "type": "Rental Vehicle Incident",
+        "pattern": "IV RENTAL (COMPANY) - CV [DESCRIPTION]",
+        "characteristics": [
+          "Rental company subrogation rights",
+          "Damage waiver questions",
+          "Multiple policy holders possible"
+        ],
+        "common_context": "Subrogation opportunity; clarify rental agreement terms"
+      }
+    ]
+  },
+  "fnol_patterns": {
+    "rules": [
+      "Use ALL CAPS for abbreviations and locations",
+      "Keep to 1-3 sentences maximum",
+      "Focus on: location, vehicles, sequence, injuries, liability indicator",
+      "Always include time/date if provided",
+      "Flag: uninsured, fleeing drivers, police report required"
+    ],
+    "examples": [
+      {
+        "raw": "The insured was pulling out of Walmart parking lot on Mockingbird when another car came around the corner and hit his driver side door. He said the other driver wasn't paying attention. Nobody was hurt but his door is dented.",
+        "fnol": "IV BACKING OUT OF PKG LOT (WALMART, MOCKINGBIRD) STRUCK BY CV ON DRVR SIDE. CLMT STATED NOT PAYING ATTENTION. NO INJURIES. DENT TO DOOR."
+      },
+      {
+        "raw": "I was on the highway going about 60 when someone just merged right into me without looking. I had to swerve and almost went into the median. He pulled over and we exchanged information. Both cars are drivable but mine has passenger side damage.",
+        "fnol": "IV HIT BY CV LANE CHANGE ON I-635 NEAR BELT LINE. CLMT STATED DID NOT CHECK MIRROR. PASS SIDE DAMAGE. BOTH VEHS DRIVABLE."
+      },
+      {
+        "raw": "Hit me at the red light at LBJ and Plano, just rear ended me. His insurance company is calling but I'm not sure if I should talk to them. My car is fine, I'm fine.",
+        "fnol": "IV R/E CV AT LBJ & PLANO (RED LIGHT). NO INJURIES, MINIMAL DAMAGE. CV DRIVER INSURED."
+      },
+      {
+        "raw": "I was at the apartment complex parking, some guy wasn't looking and backed into my car. He says it was my fault but he's the one reversing. He doesn't speak much English and didn't have insurance.",
+        "fnol": "IV HIT BY CV BACKING UP AT APTS COMPLEX (ADDRESS). CV DRIVER UNINS. NO INS VERIFICATION."
+      },
+      {
+        "raw": "We were at an intersection and I had the green light. This white pickup just ran the red and t-boned me on the driver side. Police came and took a report. I have his insurance info from the officer.",
+        "fnol": "IV T-BONED BY CV (WHITE PICKUP) AT [INTERSECTION] - IV HAD GREEN, CV RAN RED. POLICE REPORT FILED. DRVR SIDE IMPACT."
+      },
+      {
+        "raw": "Left side parking at the grocery store. When I came out, somebody hit my car. They left a note with their name and number but no insurance info. I'm worried they might cancel before we file.",
+        "fnol": "IV HIT WHILE PARKED AT GROCERY STORE. CLMT LEFT NOTE. NO INSURANCE INFO YET. NEED TO VERIFY CLMT IDENTITY & COVERAGE."
+      },
+      {
+        "raw": "Driving across the Santa Fe Bridge into Mexico for a weekend trip. Got hit by a taxi that wasn't paying attention. Taxi driver said to just pay him cash but I got his plate number. No police involved yet.",
+        "fnol": "IV HIT BY TAXI VEHICLE AT SANTA FE BRIDGE, MEXICO. NO INSURANCE VERIFICATION. NO POLICE REPORT. CASH OFFER MADE BY CLMT. ESCALATE FOR INTERNATIONAL HANDLING."
+      },
+      {
+        "raw": "Rented a car from Enterprise for my vacation. Got rear ended at a stoplight. The other driver admitted fault. My insurance or the rental company's?",
+        "fnol": "IV RENTAL (ENTERPRISE) R/E CV AT STOPLIGHT. OTHER DRIVER AT FAULT. CLMT LIABILITY CLEAR. COORDINATE W/ RENTAL COMPANY ON COVERAGE & SUBROGATION."
+      },
+      {
+        "raw": "I hit a parked car in a parking garage at night and didn't see anyone around. I left a note on their windshield with my name and number. Now they're calling and threatening to sue. I'm not sure what to do.",
+        "fnol": "IV HIT PARKED CV IN PARKING GARAGE (DATE/TIME). IV (INSD) LEFT CONTACT INFO. CLMT NOW PURSUING. CLARIFY: WAS THIS REPORTED AT TIME OF INCIDENT?"
+      },
+      {
+        "raw": "Three cars were involved. I was stopped at a red light, got hit from behind, and then I hit the car in front of me. It's all a mess and everyone's blaming everyone else. The police are still investigating.",
+        "fnol": "3-VEHICLE INCIDENT AT [LOCATION]. IV MIDDLE VEHICLE - R/E BY CV3, STRUCK CV1 IN FRONT. POLICE INVESTIGATING. FAULT CHAIN UNCLEAR. AWAIT POLICE REPORT."
+      }
+    ]
+  },
+  "voice_and_tone": {
+    "about_manu": {
+      "background": "Operations and technology leader at SNAP Insurance Service LLC, bilingual in English and Spanish, handles claims systems, underwriting automation, and all internal tools",
+      "communication_style": [
+        "Direct and efficient — no unnecessary filler",
+        "Practical and detail-oriented — gets to the point",
+        "Professional but human — warm without being casual",
+        "Bilingual awareness — catches nuance in Spanish claims",
+        "Adjuster-first mindset — writes for people who process 50+ claims per day"
+      ]
+    },
+    "snap_professional_voice": {
+      "tone": "Professional but human. Efficient but thorough. Confident in our process.",
+      "perspective": "You are an adjuster who knows SNAP's claim types, our service regions, and our standards. You're writing for other adjusters and claims teams who need clarity fast.",
+      "characteristics": [
+        "Use abbreviations (it's faster, more standard)",
+        "Flag anomalies (uninsured, fleeing, border, multi-vehicle)",
+        "No judgment on drivers — just facts",
+        "Time and location are critical — always include",
+        "When in doubt, escalate (flag for underwriter review)"
+      ],
+      "what_to_avoid": [
+        "Flowery language or unnecessary adjectives",
+        "Assumptions about liability (wait for investigation)",
+        "Sympathizing with claimants (stay neutral)",
+        "Leaving ambiguity (be specific: 'unclear' gets followup calls)"
+      ]
+    }
+  },
+  "systems_and_workflows": {
+    "modotech_integration": {
+      "description": "SNAP's core policy and claims system",
+      "fnol_format": "Ultra-compact (1-3 sentences, ALL CAPS, abbreviations only)",
+      "what_modotech_needs": [
+        "Location (street, intersection, landmark)",
+        "Vehicles (year/make, color, damage location)",
+        "Sequence (who hit who, impact direction)",
+        "Injuries (yes/no, severity if yes)",
+        "Liability indicator (clear, disputed, uninsured flag)"
+      ]
+    },
+    "cladis": {
+      "description": "SNAP's claims distribution and design system for all HTML tools",
+      "hosted_at": "GitHub Pages (snap project sites hub)",
+      "design_tokens": "Navy deep (#051c2b), Arsenal serif for titles, Inter sans-serif for body"
+    },
+    "lucy_bot": {
+      "description": "SNAP's FNOL voice bot — captures calls, creates claims in MODOTECH",
+      "status": "Manu building; Inaza underdelivering",
+      "integration_needed": "This RAG system feeds into Lucy's prompt so new patterns auto-improve bot accuracy"
+    },
+    "underwriting_automation": {
+      "partner": "Inaza",
+      "responsibility": "Document intake, policy verification, underwriting triage",
+      "note": "KB helps with claim context; underwriting has separate rules"
+    }
+  }
+}

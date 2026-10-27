@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SNAP Statement Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Arsenal:wght@400;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: two working panes — call on the left, filled statement on the right — under a thin navy bar */
+:root{
+  --navy:#051c2b; --navy-2:#0d3550; --bg:#f5f5f5; --surface:#ffffff; --line:#dde2e6;
+  --fg:#14222c; --muted:#5d6b75; --accent:#0f6a9e; --accent-ink:#ffffff;
+  --ok:#1f7a4d; --ok-bg:#e6f4ec; --warn:#a15c00; --warn-bg:#fdf1de; --miss:#8a96a0; --miss-bg:#eef1f3;
+  --alert:#b3261e; --alert-bg:#fbe9e7;
+  --f-display:"Arsenal",Georgia,serif; --f-body:"Inter",system-ui,-apple-system,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --navy:#051c2b; --navy-2:#0d3550; --bg:#0b161e; --surface:#122330; --line:#24394a;
+  --fg:#e6edf2; --muted:#93a4b0; --accent:#5bb3e6; --accent-ink:#04121b;
+  --ok:#6fd3a0; --ok-bg:#12352a; --warn:#f2b45c; --warn-bg:#3a2a12; --miss:#7c8b96; --miss-bg:#1a2c39;
+  --alert:#ff8a80; --alert-bg:#3c1a19; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --navy:#051c2b; --navy-2:#0d3550; --bg:#0b161e; --surface:#122330; --line:#24394a;
+  --fg:#e6edf2; --muted:#93a4b0; --accent:#5bb3e6; --accent-ink:#04121b;
+  --ok:#6fd3a0; --ok-bg:#12352a; --warn:#f2b45c; --warn-bg:#3a2a12; --miss:#7c8b96; --miss-bg:#1a2c39;
+  --alert:#ff8a80; --alert-bg:#3c1a19; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5}
+header{background:var(--navy);color:#fff}
+.bar{max-width:1320px;margin:0 auto;padding-block:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.bar h1{font-family:var(--f-display);font-size:22px;margin:0;letter-spacing:.01em}
+.bar p{margin:0;color:#b9c8d3;font-size:13px}
+main{max-width:1320px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;align-items:start}
+@media (max-width:900px){main{grid-template-columns:minmax(0,1fr)}}
+.pane{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-width:0}
+.pane-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.pane-h h2{font-family:var(--f-display);font-size:18px;margin:0}
+.pane-b{padding:16px;display:flex;flex-direction:column;gap:14px}
+label.lab{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;display:block;margin-bottom:5px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:480px){.row{grid-template-columns:1fr}}
+select,input[type=text],textarea{width:100%;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+textarea#transcript{min-height:380px;font-family:var(--f-mono);font-size:12.5px;line-height:1.55;resize:vertical}
+select:focus,input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.addons{display:flex;flex-wrap:wrap;gap:8px}
+.chk{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 11px;font-size:12.5px;cursor:pointer;background:var(--bg)}
+.chk input{accent-color:var(--accent)}
+.btn{font:inherit;font-weight:600;border-radius:6px;padding:9px 16px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.sm{padding:5px 11px;font-size:12.5px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.hint{font-size:12.5px;color:var(--muted)}
+.example-tag{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-bg);border-radius:4px;padding:2px 7px}
+.status{font-size:13px;color:var(--muted)}
+.status.err{color:var(--alert)}
+/* summary strip */
+.meter{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.meter .n{font-family:var(--f-display);font-size:26px;font-variant-numeric:tabular-nums;line-height:1}
+.meter .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.meter div{display:flex;flex-direction:column;gap:3px}
+.track{flex:1;min-width:140px;height:8px;border-radius:4px;background:var(--miss-bg);overflow:hidden;display:flex}
+.track span{display:block;height:100%}
+.callouts{display:flex;flex-direction:column;gap:8px}
+.callout{border-radius:6px;padding:9px 12px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.callout b{font-size:11px;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;padding-top:1px}
+.callout.alert{background:var(--alert-bg);color:var(--alert)}
+.callout.info{background:var(--warn-bg);color:var(--warn)}
+.callout.suggest{background:var(--miss-bg);color:var(--fg)}
+.callout .txt{color:var(--fg)}
+.ask{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+/* fields */
+.tabs{display:flex;gap:6px}
+.sec{border-top:1px solid var(--line);padding-top:10px}
+.sec h3{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;font-weight:600}
+.f{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,5fr) auto;gap:10px;align-items:center;padding:4px 0}
+@media (max-width:560px){.f{grid-template-columns:minmax(0,1fr) auto}.f input{grid-column:1/-1;grid-row:2}}
+.f .l{font-family:var(--f-mono);font-size:11.5px;color:var(--fg);min-width:0;overflow-wrap:anywhere}
+.f input{font-family:var(--f-mono);font-size:12px;padding:5px 8px}
+.pill{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.unclear{background:var(--warn-bg);color:var(--warn)}
+.pill.na{background:var(--miss-bg);color:var(--miss)}
+.f.na input{color:var(--miss)}
+.hide-ok .f.ok{display:none}
+pre#out{margin:0;font-family:var(--f-mono);font-size:12px;line-height:1.6;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:560px;overflow:auto}
+.kb{border-top:1px solid var(--line);padding-top:12px}
+select.need{border-color:var(--alert);outline:2px solid var(--alert-bg)}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.empty h3{font-family:var(--f-display);color:var(--fg);font-size:19px;margin:0 0 6px}
+@media (prefers-reduced-motion:no-preference){.track span{transition:width .4s ease}}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+
+<header><div class="bar">
+  <h1>SNAP Statement Builder</h1>
+  <p>Paste the call transcript. Claude fills the statement template. You review, then paste into the Contact with Party note.</p>
+</div></header>
+
+<main>
+  <section class="pane" aria-labelledby="h-call">
+    <div class="pane-h"><h2 id="h-call">The call</h2><span class="example-tag" id="exTag">Example call loaded</span></div>
+    <div class="pane-b">
+      <div class="row">
+        <div><label class="lab" for="tpl">Statement template</label><select id="tpl"></select></div>
+        <div><label class="lab" for="dir">Call direction</label>
+          <select id="dir"><option value="OBC">Outbound (OBC)</option><option value="IBC">Inbound (IBC)</option></select></div>
+      </div>
+      <div class="row">
+        <div><label class="lab" for="lang">Call language (required)</label>
+          <select id="lang"><option value="">Choose the call language…</option><option value="es">Spanish</option><option value="en">English</option><option value="mix">Mixed Spanish / English</option></select></div>
+        <div><span class="lab">Statement output</span><p class="hint" style="margin:7px 0 0">Always in English, SNAP format</p></div>
+      </div>
+      <div class="row">
+        <div><label class="lab" for="party">Statement from</label>
+          <select id="party"><option value="INSD">Insured / insured driver</option><option value="CLMT">Claimant / claimant driver</option><option value="ULD">Unlisted driver</option></select></div>
+        <div><label class="lab" for="calldate">Call date</label><input type="text" id="calldate" placeholder="MM/DD/YYYY"></div>
+      </div>
+      <div>
+        <span class="lab">Add question sets</span>
+        <div class="addons" id="addons"></div>
+      </div>
+      <div>
+        <label class="lab" for="transcript">Transcript (English, Spanish or mixed)</label>
+        <textarea id="transcript" spellcheck="false"></textarea>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="run">Fill statement</button>
+        <button class="btn" id="stop" hidden>Stop</button>
+        <label class="btn sm" for="file" style="font-weight:500">Load transcript file</label>
+        <input type="file" id="file" accept=".txt,.vtt,.srt,text/plain" hidden>
+        <button class="btn sm" id="clear">Clear</button>
+      </div>
+      <p class="hint" id="hint">Works with a RingCentral transcript (.txt or .vtt) or any copied text. Speaker labels help but are not required.</p>
+      <div class="kb">
+        <span class="lab">SNAP knowledge</span>
+        <p class="hint" id="kbStatus" style="margin:0 0 8px">Using built-in SNAP vocabulary, claims rules and Spanish claims terms.</p>
+        <div class="actions">
+          <label class="btn sm" for="kbFile" style="font-weight:500">Load snap-knowledge-base.json</label>
+          <input type="file" id="kbFile" accept=".json,application/json" hidden>
+          <button class="btn sm" id="kbReset" hidden>Use built-in only</button>
+        </div>
+      </div>
+      <p class="status" id="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section class="pane" aria-labelledby="h-stmt">
+    <div class="pane-h">
+      <h2 id="h-stmt">Statement</h2>
+      <div class="tabs">
+        <button class="btn sm" id="tglMissing" aria-pressed="false" disabled>Show gaps only</button>
+        <button class="btn sm primary" id="copy" disabled>Copy statement</button>
+      </div>
+    </div>
+    <div class="pane-b" id="result">
+      <div class="empty" id="empty">
+        <h3>Nothing filled yet</h3>
+        <p>Press <b>Fill statement</b> to run the example call, or paste your own transcript first. Every field comes back answered, unclear, or not asked. Nothing is guessed.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+// ---------- Templates (from the PD + BI claims manual) ----------
+const B = {
+  id: ["NAME","ADDRESS","IS THIS A HOUSE OR APT","HOW LONG HAVE YOU LIVED AT THIS ADDRESS","PHONE","DOB","DL","IS YOUR LICENSE VALID, SUSPENDED, OR EXPIRED?","IF SUSPENDED - WHEN, AND WHY WAS IT SUSPENDED?","IF NO DL/ID: DO YOU HAVE ANY OTHER TYPE OF ID - MATRICULA, PASSPORT?","EMAIL","PRIMARY LANGUAGE"],
+  loss: ["DOL","TOL","AX LOCATION"],
+  police: ["WAS POLICE CALLED","WHICH POLICE DEPT. WENT TO THE SCENE","POLICE REPORT OR INCIDENT#","DID YOU GIVE A STMNT TO THE OFFICER","CITATIONS","AMBULANCE/FIRE DEPT COME TO THE SCENE","WHAT WAS THE PURPOSE OF YOUR TRIP","WHERE WERE YOU GOING","WHERE WERE YOU COMING FROM"],
+  weather: ["HOW WAS THE WEATHER THAT DAY (CLEAR, DRY, RAINING)"],
+  iv: ["IV (YR, MAKE, MODEL, COLOR)","VIN","LICENSE PLATE","IV POI","DOES YOUR VEHICLE HAVE A DASHCAM/BACKUP CAMERA","WERE YOU USING THE DASHCAM/BACKUP CAMERA AT THE TIME OF LOSS","IV DRIVEN AWAY/TOWED/LOCATION","DID AIRBAGS DEPLOY","ANY PRIOR AX/DMG TO IV","IVO","IS VEHICLE PAID OFF","IF NO, WHO IS THE LIENHOLDER","IVD","IF DRIVER UNKNOWN - DESCRIBE DRIVER","IV PASS","RELATION OF PASS TO INSD/DRIVER","SEATBELTS","WAS ANYBODY INJURED IN THE ACCIDENT","IF YES, WHO"],
+  cv: ["CV (YR, MAKE, MODEL, COLOR)","VIN","LICENSE PLATE","CV POI","DID AIRBAGS DEPLOY","CV DRIVEN AWAY/TOWED","ANY PRIOR AX/DMG TO CV","CVO(S) (IF THERE ARE 2 OWNERS PLS LIST BOTH)","CVD","CV PASS","SEATBELTS","WAS ANYBODY INJURED IN THE ACCIDENT"],
+  road: ["WHAT STREET WERE YOU DRIVING ON","HOW MANY LANES ON THE STREET","WHICH LANE WERE YOU ON","DID ACCIDENT OCCUR AT AN INTERSECTION","IF YES, WHAT INTERSECTION","WHAT STREET WAS THE OTHER VEH DRIVING ON","WHICH LANE WAS THE OTHER VEH DRIVING ON","WHAT WAS THE SPEED LIMIT","WHAT SPEED WERE YOU DRIVING","WERE YOU USING ANY PORTABLE/ELECTRONIC DEVICES AT THE TIME OF THE LOSS (DASHCAM, PHONE, GPS, BLUETOOTH)","DID YOU TAKE ANY EVASIVE ACTION TO ATTEMPT TO AVOID THE COLLISION","DID YOU HEAR ANY HORN, HONKING, OR SCREECHING BRAKES","IN YOUR OWN WORDS, HOW DID THE ACCIDENT HAPPEN"],
+  close: ["WAS THERE ANY OTHER PROP DMG","WERE THERE ANY WITNESSES, OR DID ANYONE STEP FORWARD TO ASSIST IN ANY WAY","HAD YOU CONSUMED ANY MEDS/ALCOHOL","FOR INSDS: BUSINESS/GOVT USE"],
+  uldPh: ["PH NAME","PH MAILING ADDRESS","PH PHYSICAL ADDRESS","PH PHONE","PH PRIMARY LANGUAGE","ULD'S RELATIONSHIP TO PH","DOES ULD LIVE/HAS EVER LIVED WITH PH","IF YES, WHEN & FOR HOW LONG (GET DATES)","DID ULD HAVE PERMISSION TO DRIVE IV","WHO GAVE ULD PERMISSION TO DRIVE IV (NAME, PHONE)","IF NOT PH, HAS PH EVER GIVEN ULD PERMISSION TO DRIVE IV","HOW & WHEN DID ULD OBTAIN IV KEYS","DOES ULD HAVE ACCESS TO IV KEYS AT ALL TIMES","DOES ULD HAVE OWN SET OF IV KEYS","DOES ULD DRIVE IV FREQUENTLY (TIMES A WEEK/MONTH)","WHERE DID ULD GET ACCESS OR PICK UP IV","HOW DID ULD GET TO WHERE IV WAS","DOES ULD OWN A VEH (YR, MAKE, MODEL)","IF YES, DOES ULD HAVE INS ON HIS VEH (INS INFO)","WHAT WAS THE REASON ULD WAS DRIVING IV ON DOL INSTEAD OF OWN VEH","DO YOU KNOW IF PH INQUIRED OR GOT A QUOTE TO ADD ULD TO POLICY"],
+  community: ["INSURED'S ADDRESS","DRIVER'S ADDRESS","RELATIONSHIP BETWEEN INSURED AND DRIVER","HAS DRIVER EVER LIVED WITH INSURED, IF YES, WHEN (GET DATES)","IS OR HAS THE VEHICLE EVER BEEN GARAGED AT POLICYHOLDER'S ADDRESS","IF YES, WHEN","DOES INSURED EVER DRIVE IV, OR HAS INSURED EVER DRIVEN IV, IF YES, WHEN","WHY WAS VEHICLE INSURED UNDER THIS POLICY","DOES THE DRIVER GIVE ANY MONEY TO THE INSURED FOR THE INSURANCE","WHERE IS VEHICLE GARAGED","WHO IS THE PRIMARY DRIVER OF INSURED VEHICLE"],
+  oos: ["WHY IS INSURED OUT OF TOWN","HOW LONG HAVE THE VEHICLE AND INSURED BEEN OUT OF TOWN","HOW LONG WILL INSURED & VEHICLE BE OUT OF TOWN","WHERE IS INSURED STAYING WHILE OUT OF TOWN (HOTEL, APT, FAMILY MEMBER, OR FRIEND)","DOES INSURED PAY RENT WHILE BEING OUT OF TOWN","HOW HAVE THE INSURANCE PAYMENTS BEEN MADE (ONLINE, OVER THE PHONE, IN PERSON)","WHERE IS THE VEHICLE REGISTERED","WHERE IS THE VEH PERMANENTLY GARAGED","IS INSURED/DRIVER WORKING OUT OF STATE","HOW OFTEN DO YOU TRAVEL OUT OF STATE FOR WORK"],
+  moved: ["WHEN DID INSURED/DRIVER MOVE TO NEW STATE","HAS AN INSURANCE POLICY BEEN PURCHASED IN THE NEW STATE OF RESIDENCE","IF YES, INS INFO","IF NO, WHY NOT","DID INSURED/DRIVER NOTIFY AGENT THEY MOVED OUT OF STATE"],
+  buConstr: ["TYPE OF BUSINESS INSURED WORKS IN","IS INSURED SELF-EMPLOYED","NAME OF COMPANY INSURED WORKS FOR","DOES INSURED/DRIVER WORK AT A PERMANENT LOCATION, OR DO THEY GO TO WHERE JOB NEEDS TO BE COMPLETED","DOES EMPLOYER PROVIDE TRANSPORTATION, OR DO YOU USE YOUR PERSONAL VEHICLE TO GET TO THE JOB SITE","WHERE WAS INSURED/DRIVER COMING FROM BEFORE THE LOSS","WHAT WAS INSURED/DRIVER DOING AT TIME OF LOSS","WHERE WAS INSURED/DRIVER GOING","DOES INSURED/DRIVER CARRY PEOPLE, TOOLS, MATERIAL, MERCHANDISE, OR FOOD FOR $","IF YES, WHAT TYPE OF TOOLS/MATERIALS/MERCHANDISE ARE CARRIED","DID INSURED/DRIVER HAVE ANY TOOLS/MATERIALS/MERCHANDISE WITH THEM AT TIME OF LOSS","DOES EMPLOYER PROVIDE TOOLS & EQUIPMENT OR DO YOU USE YOUR OWN","WAS INSURED/DRIVER PULLING A TRAILER AT TIME OF LOSS","WHAT TYPE OF TRAILER (YR, MAKE, MODEL, VIN)","TRAILER OWNER","WHAT WAS BEING CARRIED IN THE TRAILER"],
+  buApp: ["TYPE OF BUSINESS INSURED WORKS IN","IS INSURED SELF-EMPLOYED","NAME OF THE COMPANY INSURED WORKS FOR","WAS INSURED/DRIVER LOGGED INTO AN APP (UBER, LYFT, DOOR DASH, UBER EATS, INSTACART, RIDESHARE, CAREGIVER)","DID INSURED/DRIVER HAVE AN ORDER OR A CUSTOMER/PASSENGER IN THE VEHICLE","WAS INSURED/DRIVER ON THE WAY TO PICK-UP/DROP OFF AN ORDER OR CUSTOMER/PASSENGER","DOES EMPLOYER PROVIDE INSURANCE","IF YES, NAME AND POLICY #"],
+  injury: ["PLEASE DESCRIBE YOUR INJURY","DID ANY PART OF YOUR BODY MAKE CONTACT WITH ANY PART OF THE VEH","IF YES, WHAT PART(S)","HOW DO YOU FEEL NOW, ARE YOU IN PAIN","WHERE DID YOU FIRST SEEK TREATMENT (ER, URGENT CARE, PRIMARY CARE, CHIROPRACTOR)","WERE YOU CHECKED AT THE SCENE","WERE YOU TAKEN TO A HOSPITAL","IF YES, HOW WERE YOU TRANSPORTED","WERE YOU ADMITTED TO HOSPITAL","WHEN WERE YOU RELEASED","WERE YOU PRESCRIBED ANY MEDS, IF YES, WHAT MEDS","WERE YOU GIVEN A DIAGNOSIS OR FINDINGS","HAVE YOU RECEIVED ADDITIONAL TREATMENT","ARE YOU CURRENTLY TREATING","WHERE ARE YOU RECEIVING TREATMENT","WHEN WAS YOUR 1ST TREATMENT","HOW IS YOUR PROVIDER HANDLING THE BILLING AND PAYMENT FOR TREATMENT","DO YOU KNOW THE MED COST TO DATE, INCLUDING OUT OF POCKET EXPENSES","HAS PROVIDER DISCUSSED ANY FUTURE CARE","ANY PRIOR INJURIES/PRIOR MEDICAL HISTORY (PMHX)","ANY PRIOR ACCIDENTS","HOW HAVE YOUR INJURIES AFFECTED YOUR DAILY LIFE"],
+  injWork: ["ARE YOU CURRENTLY EMPLOYED","WHAT IS YOUR OCCUPATION","HAVE YOUR INJURIES CAUSED YOU TO MISS WORK","IF YES, HOW MUCH TIME HAVE YOU MISSED","WHEN DID YOU GO BACK/EXPECTED TO GO BACK TO WORK","HOW MANY HOURS DO YOU WORK PER WEEK","WHAT IS YOUR HOURLY RATE/SALARY","ARE YOU CURRENTLY UNDER ANY RESTRICTIONS","DO YOU HAVE MEDICARE/MEDICAID/HEALTH INS","IS THERE ANYTHING ELSE ABOUT YOUR INJURY OR RECOVERY YOU FEEL IS IMPORTANT FOR US TO KNOW"],
+  theftId: ["MARITAL STATUS","OCCUPATION","EMPLOYER","HOW LONG HAVE YOU WORKED THERE"],
+  theft: ["DATE OF THEFT","THEFT LOCATION","DATE & TIME VEH WAS PARKED","WHO LEFT VEHICLE AT THIS LOCATION (NAME, ADDRESS, PHONE#)","REASON VEHICLE WAS LEFT AT THIS LOCATION","WAS VEH LOCKED","WERE KEYS LEFT IN THE VEHICLE","HOW MANY SETS OF KEYS","ARE ALL THE KEYS IN YOUR POSSESSION","WHO HAS ACCESS TO THE KEYS & VEH","ARE THERE ANY SUSPECTS"],
+  theftRpt: ["DATE & TIME THEFT WAS DISCOVERED","WHO DISCOVERED THE THEFT","DATE REPORTED TO POLICE","WHO REPORTED THEFT TO POLICE","POLICE DEPARTMENT","OFFICERS NAME","REPORT #","IF VEH WAS NOT TAKEN FROM YOUR HOUSE, HOW DID YOU GET HOME"],
+  theftOwn: ["IV REGISTERED OWNER","WHEN WAS VEH PURCHASED","PURCHASED NEW/USED","HOW MUCH DID VEH COST","WHERE DID YOU PURCHASE VEH (DEALER/INDIVIDUAL)","IS THE VEH PAID OFF","IF NOT, WHO IS THE LIENHOLDER","ARE YOUR PAYMENTS UP TO DATE","WHAT IS YOUR MONTHLY PAYMENT","WHEN WAS YOUR LAST PAYMENT MADE","HOW WAS THE LAST PAYMENT MADE","LIENHOLDER NAME & PHONE"],
+  theftVeh: ["IV (YR, MAKE, MODEL, COLOR)","VIN","LIC PLATE","NUMBER OF CYLINDERS","TRANSMISSION AUTOMATIC/STANDARD","LEATHER SEATS","TINTED WINDOWS","DOES VEH HAVE ANY CUSTOM EQUIPMENT","DOES YOUR VEHICLE HAVE A BACKUP CAMERA","DOES VEH HAVE IDENTIFIABLE MARKS (STICKERS, DENTS, CRACKED GLASS)","HAS VEH BEEN INVOLVED IN PRIOR ACCIDENTS","DOES VEH HAVE ANY PRIOR DAMAGE","HAS VEH HAD RECENT REPAIRS","ANY PRIOR THEFTS","HAS VEH EVER BEEN REPOSSESSED","DID YOU HAVE ANY PERSONAL ITEMS IN VEH","PLEASE TELL ME WHAT YOU DID 24 HOURS PRIOR TO THE VEH THEFT"],
+  theftRec: ["HAS VEHICLE BEEN RECOVERED","IF YES, WHERE WAS VEHICLE RECOVERED","CONDITION OF THE VEHICLE","ARRESTS MADE"],
+  uldIssue: ["ARE YOU AWARE OF THE ACCIDENT","CAN YOU TELL US WHO THE DRIVER WAS AT TIME OF LOSS","CAN YOU VERIFY THE VEH YR, MAKE, & MODEL","WHO IS THE REGISTERED OWNER OF IV","IS THE VEH PAID OFF","IF NOT, WHO IS THE LIENHOLDER","IV POI & DAMAGE","WAS VEH BEING USED FOR BUSINESS/DELIVERY FOR A FEE","WHEN WAS VEHICLE RETURNED TO INSURED","HOW WERE VEHICLE AND KEYS RETURNED TO INSD","DID THE DRIVER TELL YOU WHAT HAPPENED IN THE ACCIDENT (DETAILS)"],
+  uldInfo: ["ULD NAME","ULD MAILING ADDRESS","ULD PHYSICAL ADDRESS","ULD PHONE","ULD DOB","ULD DL","ULD PRIMARY LANGUAGE","ULD'S RELATIONSHIP TO PH","DOES ULD LIVE/HAS EVER LIVED WITH PH","IF YES, WHEN & FOR HOW LONG (GET DATES)","DID ULD HAVE PERMISSION TO DRIVE IV","WHO GAVE ULD PERMISSION TO DRIVE IV (NAME, PHONE)","IF NOT PH, HAS PH EVER GIVEN ULD PERMISSION TO DRIVE IV","WHERE ARE THE KEYS NORMALLY KEPT","HOW & WHEN DID ULD OBTAIN IV KEYS","DOES ULD HAVE ACCESS TO IV KEYS AT ALL TIMES","DOES ULD HAVE OWN SET OF IV KEYS","DOES ULD DRIVE IV FREQUENTLY (TIMES A WEEK/MONTH)","WHERE DID ULD GET ACCESS OR PICK UP IV","HOW DID ULD GET TO WHERE IV WAS","DOES ULD OWN A VEH (YR, MAKE, MODEL)","IF YES, DOES ULD HAVE INS ON HIS VEH (INS INFO)","WHAT WAS THE REASON ULD WAS DRIVING IV ON DOL INSTEAD OF OWN VEH","DID INSURED INQUIRE OR GET A QUOTE TO ADD ULD TO POLICY","ANY REASON WHY ULD WAS NOT ADDED TO POLICY"],
+  uldReturn: ["WHEN & HOW WERE IV AND KEYS RETURNED TO PH"]
+};
+const S = (k, title) => ({ k, title, fields: B[k] });
+const STD = [S("loss","Loss"),S("police","Police & trip"),S("weather","Weather"),S("iv","Insured vehicle"),S("cv","Claimant vehicle"),S("road","How it happened"),S("close","Closing")];
+const TEMPLATES = {
+  basic:     { name:"Basic Insured", party:"INSD", opener:"PLACED CALL TO INSURED/DRIVER", secs:[S("id","Caller"),...STD] },
+  uld:       { name:"Unlisted Driver", party:"ULD", opener:"PLACED CALL TO UNLISTED DRIVER", secs:[S("id","Caller"),S("uldPh","Policyholder info & ULD coverage"),...STD,S("uldReturn","Vehicle return")] },
+  community: { name:"Insured - Community Policy", party:"INSD", opener:"PLACED CALL TO INSURED/DRIVER", secs:[S("id","Caller"),S("loss","Loss"),S("police","Police & trip"),S("weather","Weather"),S("iv","Insured vehicle"),S("community","Community policy questions"),S("cv","Claimant vehicle"),S("road","How it happened"),S("close","Closing")] },
+  oos:       { name:"Out of State", party:"INSD", opener:"PLACED CALL TO INSURED/DRIVER", secs:[S("id","Caller"),...STD,S("oos","Out of state questions"),S("moved","Insured moved out of TX/NM")] },
+  theft:     { name:"Theft", party:"INSD", opener:"PLACED CALL TO INSURED/DRIVER", secs:[S("id","Caller"),S("theftId","Employment"),S("theft","Theft"),S("theftRpt","Discovery & police"),S("theftOwn","Ownership & lien"),S("theftVeh","Vehicle"),S("theftRec","Recovery")] },
+  uldIssue:  { name:"Insured - ULD Issue", party:"INSD", opener:"PLACED CALL TO INSURED", secs:[S("id","Caller"),S("uldIssue","The accident & the driver"),S("uldInfo","Unlisted driver info & questions")] }
+};
+const ADDONS = {
+  buApp:    { name:"Business use - app / rideshare / delivery", sec:S("buApp","Business use questions (app / rideshare)") },
+  buConstr: { name:"Business use - construction / trades", sec:S("buConstr","Business use questions (construction / trades)") },
+  injury:   { name:"Injury questions (BI / early settlement)", sec:null }
+};
+const EXAMPLE = `ADJUSTER: This is Maria with Snap Insurance on a recorded line needing to obtain a statement from Jorge Ramirez, do I have your permission to proceed with this statement?
+INSURED: Sí, está bien.
+ADJUSTER: ¿Me puede confirmar su nombre completo y su dirección?
+INSURED: Jorge Ramírez Luna. 4410 Bruton Road, apartamento 214, Dallas, Texas 75217.
+ADJUSTER: ¿Cuánto tiempo lleva viviendo ahí?
+INSURED: Como dos años.
+ADJUSTER: And the best phone number for you?
+INSURED: 214-555-0187.
+ADJUSTER: ¿Fecha de nacimiento?
+INSURED: 3 de marzo de 1988.
+ADJUSTER: ¿Su licencia está vigente?
+INSURED: Sí, licencia de Texas, está vigente. No me la sé de memoria, se la mando por foto.
+ADJUSTER: Ok. Tell me about the accident. ¿Cuándo fue?
+INSURED: El lunes 12 de octubre, como a las seis de la tarde, en Buckner y Lake June.
+ADJUSTER: ¿Llamaron a la policía?
+INSURED: Sí, vino Dallas Police. Me dieron un papelito con el número, 2026-189442. Yo sí hablé con el oficial. No me dieron multa.
+ADJUSTER: ¿Vino ambulancia?
+INSURED: No.
+ADJUSTER: ¿A dónde iba?
+INSURED: Iba saliendo del trabajo, pero... bueno, también tenía el app de DoorDash abierto, iba a recoger una orden en el Chili's.
+ADJUSTER: ¿Qué carro manejaba?
+INSURED: Un Nissan Altima 2017, gris. Se dañó todo el frente, el bumper y el cofre. Lo pude manejar a la casa. No salieron las bolsas de aire.
+ADJUSTER: ¿Está pagado el carro?
+INSURED: No, lo debo todavía, con Westlake Financial.
+ADJUSTER: ¿Iba alguien con usted?
+INSURED: No, iba solo. Traía el cinturón puesto.
+ADJUSTER: ¿Y el otro vehículo?
+INSURED: Una troca Ford F-150 blanca, como 2020. Le pegué en la defensa de atrás. Manejaba un señor y venía su esposa con él. Dijeron que les dolía el cuello pero no se fueron en ambulancia.
+ADJUSTER: What lane were you in?
+INSURED: El carril derecho, son tres carriles. Él iba enfrente de mí en el mismo carril, the light turned yellow and he stopped really hard, and I couldn't stop in time, le pegué por atrás.
+ADJUSTER: ¿Cuál era el límite de velocidad y a cuánto iba usted?
+INSURED: Cuarenta, yo iba como a treinta y cinco.
+ADJUSTER: ¿Estaba usando el teléfono?
+INSURED: Nomás tenía el GPS del app en el celular, en el soporte.
+ADJUSTER: ¿Había tomado algo, alcohol o medicinas?
+INSURED: No, nada.
+ADJUSTER: ¿Hubo testigos?
+INSURED: No que yo sepa.
+ADJUSTER: Ok, Jorge, I will text you so you can send photos of both vehicles and the police report.`;
+
+// ---------- UI setup ----------
+const $ = s => document.querySelector(s);
+const tplSel = $("#tpl"), ta = $("#transcript");
+for (const [k,t] of Object.entries(TEMPLATES)) tplSel.add(new Option(t.name, k));
+const addonBox = $("#addons");
+for (const [k,a] of Object.entries(ADDONS)) {
+  const l = document.createElement("label"); l.className = "chk";
+  l.innerHTML = `<input type="checkbox" id="ad-${k}" value="${k}"><span></span>`;
+  l.querySelector("span").textContent = a.name; addonBox.append(l);
+}
+ta.value = EXAMPLE;
+ta.addEventListener("input", () => { $("#exTag").hidden = ta.value === EXAMPLE; });
+$("#clear").onclick = () => { ta.value = ""; $("#exTag").hidden = true; ta.focus(); };
+$("#file").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { ta.value = cleanVtt(String(r.result)); $("#exTag").hidden = true; sniffDate(); setStatus(`Loaded ${f.name}.`); };
+  r.readAsText(f); e.target.value = "";
+};
+function cleanVtt(t){
+  if (!/^WEBVTT|-->/m.test(t)) return t;
+  return t.split(/\r?\n/).filter(l => l.trim() && !/^WEBVTT/.test(l) && !/-->/.test(l) && !/^\d+$/.test(l.trim()))
+    .map(l => l.replace(/^<v\s+([^>]+)>/, "$1: ").replace(/<[^>]+>/g,"")).join("\n");
+}
+// RingCentral transcripts stamp every turn like "| Oct 8, 2026 04:08 PM" — use it as the call date
+function sniffDate(){
+  const m = ta.value.match(/\|\s*([A-Z][a-z]{2})\s+(\d{1,2}),\s*(\d{4})/);
+  if (!m) return;
+  const mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(m[1]) + 1;
+  if (mo) $("#calldate").value = `${String(mo).padStart(2,"0")}/${m[2].padStart(2,"0")}/${m[3]}`;
+}
+ta.addEventListener("paste", () => setTimeout(sniffDate, 0));
+tplSel.addEventListener("change", () => { if (tplSel.value === "uld") $("#party").value = "ULD"; });
+function setStatus(t, err){ const s = $("#status"); s.textContent = t; s.classList.toggle("err", !!err); }
+
+B.cvClmt = ["CV (YR, MAKE, MODEL, COLOR)","VIN","LICENSE PLATE","CV POI","DOES YOUR VEHICLE HAVE A DASHCAM/BACKUP CAMERA","WERE YOU USING THE DASHCAM/BACKUP CAMERA AT THE TIME OF LOSS","DID VEHICLE AIRBAGS DEPLOY","CV DRIVEN AWAY/TOWED/LOCATION","ANY PRIOR AX/DMG TO CV","CVO(S) (IF THERE ARE 2 OWNERS PLS LIST BOTH)","IS VEH PAID OFF","IF NO, WHO IS THE LIENHOLDER","CVD","CV PASS","SEATBELTS","DID YOU HAVE ANY CAR SEATS IN YOUR VEH","WAS ANYBODY INJURED IN THE ACCIDENT"];
+B.ivClmt = ["IV (YR, MAKE, MODEL, COLOR)","VIN","LICENSE PLATE","IV POI","IV DRIVEN AWAY/TOWED","DID AIRBAGS DEPLOY","ANY PRIOR AX/DMG TO IV","IVO","IVD","IF DRIVER UNKNOWN - DESCRIBE DRIVER","IV PASS","SEATBELTS","WAS ANYBODY INJURED IN THE ACCIDENT","IF YES, WHO"];
+B.advised = ["ADVISEMENTS GIVEN TO CALLER (COVERAGE, LIABILITY, PROCESS, PAYMENT)","CALLER QUESTIONS OR REQUESTS","PHOTOS / PR / DOCUMENTS - RECEIVED OR REQUESTED"];
+function currentSections(tplKey, addonKeys, party){
+  const t = TEMPLATES[tplKey]; let secs = [...t.secs];
+  if (party === "CLMT" && secs.some(s => s.k === "iv")) {
+    // Claimant layout: the caller's vehicle (CV) comes first, then what they know about SNAP's insured vehicle
+    const out = [];
+    for (const s of secs) {
+      if (s.k === "iv") out.push(S("cvClmt","Caller's vehicle (CV)"), S("ivClmt","Insured vehicle (IV)"));
+      else if (s.k !== "cv") out.push(s);
+    }
+    secs = out;
+  }
+  for (const a of addonKeys) {
+    if (a === "injury") secs.push(S("injury","Injury questions"), S("injWork","Work related questions"));
+    else secs.push(ADDONS[a].sec);
+  }
+  secs.push(S("advised","Advisements & next steps"));
+  return secs.map((s,i) => ({ ...s, id:"s"+i, fields: s.fields.map((label,j) => ({ id:`s${i}f${j}`, label })) }));
+}
+
+// ---------- SNAP knowledge (built in; a loaded snap-knowledge-base.json is added on top) ----------
+const SNAP_KB = `SNAP VOCABULARY (use these abbreviations in values; plain English otherwise; clarity over compression)
+IV insured vehicle | IVD insured vehicle driver | IVO insured vehicle owner | CV claimant vehicle | CVD claimant vehicle driver | CVO claimant vehicle owner
+INSD insured | PH policyholder | CLMT claimant | ULD unlisted driver | ULV unlisted vehicle | PSGR / PASS passenger | DRVR driver
+R/E rear-ended | ROW right of way | POI point of impact | AX accident | DOL date of loss | TOL time of loss | DMG damage | VEH / VEHS vehicle(s)
+DRVR SIDE / PASS SIDE (P/S) | LNS lanes | PKG LOT parking lot | APTS apartments | UNK unknown | N/A
+PD property damage | BI bodily injury | INJ injury | LIAB liability | COV / COVG coverage | UNINS uninsured | UIM underinsured motorist | PNIF policy not in force
+SUBR / SUBRO subrogation | PR police report | REG registration | LOR letter of representation | ATTNY attorney | MB/MR medical bills / medical records
+IBC inbound call | OBC outbound call | ADVSD advised | REQ request(ed) | RECVD received | REV / RW review | PEND pending | MGMT management | REP representative
+FTCS failure to control speed | DUI | DWI
+
+SNAP CLAIMS RULES
+- Perspective rule (most important): IV is ALWAYS SNAP's insured vehicle and CV is ALWAYS the other party's vehicle, no matter who is on the phone. Decide who the caller is before filling any vehicle field.
+- What callers say vs. what it means: "the other car hit me / se me metió" = describe who struck whom and with which part of each vehicle; "it wasn't my fault" is an opinion, record the facts that support it; "my cousin/brother was driving" = check driver is listed (possible ULD); "I use it for DoorDash/Uber/work" = business use, coverage review; "the car is at the yard / corralón / tow lot" = storage, duty to mitigate; "I have a lawyer" = LOR / ATTNY, stop and flag.
+- Filter out: greetings, hold time, small talk, repeated questions, adjuster's own explanations (those go only in Advisements).
+- Always capture when said: exact location and cross streets, direction of travel, lanes, traffic controls (stop sign, light, who had it), each vehicle's POI, injuries and who, passengers and car seats, police/fire/EMS, PR number, citations, witnesses and what they said, devices in use, alcohol/meds, lienholder, business use, anything about a driver's license status.
+
+SPANISH CLAIMS TERMS (translate faithfully; Mexican / Central American / US Spanish usage)
+choque, accidente, me chocaron = accident / was hit | me pegó por atrás, me alcanzó = R/E | se pasó el alto = ran the stop sign | se pasó la luz roja / el semáforo = ran the red light
+alto, señal de alto = stop sign | semáforo = traffic light | carril = lane | cuadra = block | estacionamiento = PKG LOT | crucero, esquina = intersection
+carro, coche = car | troca, camioneta = pickup truck / SUV | defensa, bómper = bumper | cofre = hood | cajuela = trunk | salpicadera, guardafango = fender | puerta = door | llanta = tire | rin = wheel | calavera = tail light | faro = headlight | espejo = mirror | parabrisas = windshield
+aseguranza, seguro = insurance | póliza = policy | licencia = driver license | matrícula consular = consular ID (matricula) | placas = license plate | título = title
+patrulla, la policía, el oficial = police | multa, ticket, citación = citation | reporte, número de caso = PR / incident # | grúa = tow truck | corralón, yarda = storage / tow lot
+ambulancia = ambulance | bomberos = fire dept | me duele, dolor = pain | golpe = impact / bruise | cinturón = seatbelt | silla de bebé, asiento de niño = car seat
+abogado, licenciado = attorney | testigo = witness | iba manejando = was driving | lo estoy pagando, lo debo = not paid off (lienholder) | financiera = lienholder / finance company`;
+
+let extraKb = null;
+try { extraKb = localStorage.getItem("snapKb"); } catch {}
+function kbStatusText(){
+  if (!extraKb) return "Using built-in SNAP vocabulary, claims rules and Spanish claims terms.";
+  let info = ""; try { const j = JSON.parse(extraKb); info = j.version ? ` v${j.version}` : ""; } catch {}
+  return `Using built-in SNAP knowledge plus your snap-knowledge-base.json${info}.`;
+}
+function showKb(){ $("#kbStatus").textContent = kbStatusText(); $("#kbReset").hidden = !extraKb; }
+$("#kbFile").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try { JSON.parse(String(r.result)); } catch { setStatus("That file is not valid JSON. Load the SNAP knowledge base .json file.", true); return; }
+    extraKb = String(r.result); try { localStorage.setItem("snapKb", extraKb); } catch {}
+    showKb(); setStatus(`Loaded ${f.name}. It will be used on every fill in this browser.`);
+  };
+  r.readAsText(f); e.target.value = "";
+};
+$("#kbReset").onclick = () => { extraKb = null; try { localStorage.removeItem("snapKb"); } catch {} showKb(); };
+// If the site hosts snap-knowledge-base.json next to this page, use it automatically.
+if (!extraKb) fetch("snap-knowledge-base.json").then(r => r.ok ? r.text() : null).then(t => {
+  if (!t) return; try { JSON.parse(t); extraKb = t; showKb(); } catch {}
+}).catch(() => {});
+showKb();
+
+const LANG = {
+  es: "The call was in SPANISH. Read it as a native Spanish speaker who knows Mexican, Central American and US Spanish, including slang and Spanglish. Speech-to-text often mangles Spanish words, names and numbers: use context to recover the meaning, and mark anything you cannot recover as unclear. Translate every answer faithfully into English. Spanish names and street names stay as said, with accents removed.",
+  en: "The call was in ENGLISH. Speech-to-text may still mangle names, numbers and streets: use context and mark anything you cannot recover as unclear.",
+  mix: "The call mixes SPANISH and ENGLISH, sometimes in the same sentence. Read both as a native bilingual speaker, recover meaning from context, and translate everything into English."
+};
+$("#lang").addEventListener("change", e => e.target.classList.remove("need"));
+
+const PERSPECTIVE = {
+  INSD: "The caller is SNAP's insured or the driver of the insured vehicle. IV = the caller's vehicle. CV = the other vehicle.",
+  ULD: "The caller is an unlisted driver who was driving SNAP's insured vehicle. IV = the vehicle the caller was driving. CV = the other vehicle.",
+  CLMT: "The caller is the CLAIMANT: the other party, not SNAP's insured. IV ALWAYS means SNAP's insured vehicle (the vehicle that hit or was involved with the caller) and IVD its driver. CV means the CALLER's own vehicle and CVD the caller (or whoever drove the caller's vehicle). So put the caller's year/make/model, plate, VIN, damage, owner, lienholder, passengers and injuries in the CV fields, and what the caller knows about the insured's vehicle and driver in the IV fields. Questions worded 'you/your' (street you were driving on, your speed, devices, evasive action, own words) are answered from the caller's side. Never mix the two vehicles."
+};
+function buildPrompt(tplKey, secs, transcript, party, callDate, lang){
+  const t = TEMPLATES[tplKey];
+  const list = secs.map(s => `## ${s.title}\n` + s.fields.map(f => `${f.id} | ${f.label}`).join("\n")).join("\n\n");
+  const kbExtra = extraKb ? `\n\nSNAP KNOWLEDGE BASE (JSON, SNAP's own abbreviations, incident patterns and examples; follow it where it is more specific than the above)\n${extraKb.slice(0, 40000)}` : "";
+  return `You fill out claims statement templates for SNAP Insurance, a non-standard auto insurance MGA in Texas and New Mexico. An adjuster took a recorded statement by phone. Read the transcript and fill the "${t.name}" template.
+
+CALL LANGUAGE
+${LANG[lang]}
+OUTPUT LANGUAGE: every value, flag, suggestion and question you return is in ENGLISH, no matter what language the call was in.
+
+${SNAP_KB}${kbExtra}
+
+WHO IS SPEAKING
+${PERSPECTIVE[party]}
+The call took place on ${callDate || "an unknown date"}. If the caller gives a relative date ("Sunday", "last Tuesday", "yesterday"), work out the calendar date from the call date and mark the field "unclear" so the adjuster confirms it, e.g. "SUNDAY - 10/04/2026 BY CALL DATE, CONFIRM".
+
+THE TRANSCRIPT IS MACHINE-MADE
+It comes from phone speech-to-text, so it has errors. Speaker labels may be a name, a role, or a phone number. Some answers are missing because the system did not capture that turn.
+- If the adjuster asked a question and no answer appears, use status "unclear" with "ASKED - ANSWER NOT CAPTURED IN TRANSCRIPT".
+- If a name, number, plate, email, DOB or company looks garbled or is spelled differently in different places, use "unclear", give your best reading, and quote the raw text, e.g. "WIMBISH (TRANSCRIPT ALSO SHOWS 'WINDISH') - VERIFY SPELLING".
+- If the caller says they will send something or reads it but the transcript lost it (e.g. VIN), mark "unclear" and say so.
+
+RULES
+- Use ONLY what the caller (or adjuster, when the caller confirms it) actually said. Never guess, infer, or fill from general knowledge.
+- If a field was not discussed, leave it out of "values" entirely. The page marks it NOT ASKED.
+- If it was discussed but the answer is vague, contradictory, partial, or the caller said they will send it later, use status "unclear" and say why in the value, e.g. "TX DL, VALID - NUMBER NOT GIVEN, WILL SEND PHOTO".
+- Write every value in ENGLISH and ALL CAPS, short, in claims shorthand. Translate Spanish faithfully. Keep names, addresses, numbers and dates exactly as said; dates as MM/DD/YYYY when the year is clear, otherwise as said.
+- Use only abbreviations from the SNAP vocabulary above (or the SNAP knowledge base); spell everything else out.
+- "IN YOUR OWN WORDS" fields: a faithful 1-3 sentence summary in first person as the caller told it, translated to English, caps.
+- Yes/no fields: YES or NO, plus a few words of detail if given.
+- Witness fields: capture everything the witness or bystander said or did (translated, said the other driver has no license, told them not to call police), not just that someone stopped.
+- Keep direction and stop-sign facts straight: say which vehicle had the stop sign and which way each was going.
+- Advisements fields: what the adjuster told the caller near the end of the call (coverage under review, option to use own carrier and subrogation, estimate process, who the check is made out to) and what the caller asked.
+
+ALSO RETURN
+- "suggest": if the call clearly fits a different template or needs question sets that were not added, say so. Template keys: basic, uld, community, oos, theft, uldIssue. Add-on keys: buApp (app/rideshare/delivery), buConstr (construction/trades/tools), injury (anyone reported injury or pain). Use null for "template" if the current one fits. Also set "party" to who is really giving the statement: INSD (SNAP's insured or insured driver), CLMT (the other party / claimant), or ULD (unlisted driver of SNAP's vehicle). Signs of a claimant: the adjuster says the other driver is not a listed driver or that coverage is under review, the caller asks whether SNAP will pay for their car, or the caller says the other car hit them.
+- "flags": things the adjuster or manager must act on, per SNAP procedure. Examples: business use (app logged in / carrying goods for pay) - coverage review; unlisted or excluded driver; vehicle garaged out of state; suspended license; injuries reported - BI feature / CMS info needed; vehicle at storage - duty to mitigate; lienholder to note; attorney mentioned; other driver has no license or is not the named insured; someone asked the parties not to call police; language barrier or a third person translated; minor passenger; possible UW alert reason. level "alert" for coverage or BI issues, "info" for follow-ups.
+- "ask_next": up to 6 important questions the adjuster did NOT ask but should, in plain English, most important first.
+- "party_name": the caller's full name in caps if given.
+
+Reply with only this JSON:
+{"party_name":"","values":{"<field id>":{"v":"VALUE","s":"ok|unclear"}},"suggest":{"template":null,"party":"INSD|CLMT|ULD","addons":[],"reason":""},"flags":[{"level":"alert|info","text":""}],"ask_next":[""]}
+
+TEMPLATE FIELDS (id | label)
+${list}
+
+TRANSCRIPT
+"""
+${transcript.slice(0, 60000)}
+"""`;
+}
+
+// ---------- Run ----------
+let ctl = null, state = null, blocked = false;
+if (location.protocol === "file:") setStatus("Opened from your computer: fills will not work here. Open it from the Netlify site (/ai/).", true);
+
+// Calls the Netlify edge function, which streams Claude's answer back as server-sent events.
+async function fillViaApi(prompt, signal, onProgress){
+  let res;
+  try {
+    res = await fetch("/api/statement-fill", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ prompt }), signal });
+  } catch (e) {
+    if (e.name === "AbortError") throw { code:"cancelled" };
+    throw { code:"network", message: location.protocol === "file:"
+      ? "This page is open from your computer, so it can't reach Claude. Open it from the Netlify site (/ai/) instead."
+      : "Could not reach the server. Make sure you opened it from the Netlify site, not GitHub Pages, and that ANTHROPIC_API_KEY is set in Netlify, then try again." };
+  }
+  if (!res.ok) {
+    let msg = `Server error (${res.status}).`;
+    try { msg = (await res.json()).error || msg; } catch {}
+    throw { code: res.status === 429 ? "rate_limited" : "server", message: msg };
+  }
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = "", text = "", stop = null;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream:true });
+      const lines = buf.split("\n"); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+        let ev; try { ev = JSON.parse(line.slice(5)); } catch { continue; }
+        if (ev.type === "content_block_delta" && ev.delta?.type === "text_delta") { text += ev.delta.text; onProgress?.(text.length); }
+        else if (ev.type === "message_delta") stop = ev.delta?.stop_reason;
+        else if (ev.type === "error") throw { code:"server", message: ev.error?.message || "Claude returned an error." };
+      }
+    }
+  } catch (e) {
+    if (e?.name === "AbortError") throw { code:"cancelled" };
+    throw e;
+  }
+  if (stop === "max_tokens") throw { code:"invalid_json", message:"The answer was cut off. Try a shorter transcript." };
+  return parseJson(text);
+}
+function parseJson(t){
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const body = fence ? fence[1] : t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1);
+  try { return JSON.parse(body); } catch { throw { code:"invalid_json" }; }
+}
+
+$("#run").onclick = run;
+$("#stop").onclick = () => ctl?.abort();
+
+async function run(){
+  const transcript = ta.value.trim();
+  if (!transcript) { setStatus("Paste a transcript first.", true); ta.focus(); return; }
+  const lang = $("#lang").value;
+  if (!lang) { setStatus("Choose the call language first: Spanish, English or mixed.", true); $("#lang").classList.add("need"); $("#lang").focus(); return; }
+  const tplKey = tplSel.value;
+  const addonKeys = [...addonBox.querySelectorAll("input:checked")].map(i => i.value);
+  const secs = currentSections(tplKey, addonKeys, $("#party").value);
+  ctl = new AbortController();
+  $("#run").disabled = true; $("#stop").hidden = false;
+  setStatus("Reading the call and filling the template… this usually takes 20–60 seconds.");
+  try {
+    const party = $("#party").value;
+    const res = await fillViaApi(buildPrompt(tplKey, secs, transcript, party, $("#calldate").value.trim(), lang), ctl.signal,
+      n => setStatus(`Filling the template… ${Math.round(n/1000)}k characters written.`));
+    state = { tplKey, addonKeys, secs, res, party, dir: $("#dir").value };
+    render(); setStatus("Done. Review every field before pasting into Modotech.");
+  } catch (e) {
+    const msg = {
+      cancelled:"Stopped.",
+      rate_limited:"Too many requests right now. Wait a minute and try again.",
+      invalid_json:"The answer came back in the wrong format. Press Fill statement again.",
+      prompt_too_large:"That transcript is too long. Split the call and fill each part.",
+      refused:"Claude would not process this transcript. Check that it is a claims call."
+    }[e?.code] || e?.message || "Something went wrong reaching Claude. Press Fill statement to try again.";
+    setStatus(msg, e?.code !== "cancelled");
+  } finally {
+    $("#run").disabled = blocked;
+    $("#stop").hidden = true;
+  }
+}
+
+// ---------- Render ----------
+function esc(s){ return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function render(){
+  const { tplKey, secs, res } = state;
+  const vals = res.values || {};
+  let ok=0, un=0, na=0;
+  secs.forEach(s => s.fields.forEach(f => { const v = vals[f.id]; if (!v || !v.v) na++; else if (v.s === "unclear") un++; else ok++; }));
+  const total = ok+un+na, pct = n => (100*n/total).toFixed(1)+"%";
+
+  const flags = (res.flags||[]).filter(f => f && f.text);
+  const sug = res.suggest || {};
+  const sugAddons = (sug.addons||[]).filter(a => ADDONS[a] && !state.addonKeys.includes(a));
+  const sugTpl = sug.template && TEMPLATES[sug.template] && sug.template !== tplKey ? sug.template : null;
+  const sugParty = ["INSD","CLMT","ULD"].includes(sug.party) && sug.party !== state.party ? sug.party : null;
+  const partyName = { INSD:"the insured", CLMT:"the claimant", ULD:"an unlisted driver" };
+
+  const box = $("#result");
+  box.innerHTML = `
+    <div class="meter">
+      <div><span class="n">${ok}</span><span class="k">Answered</span></div>
+      <div><span class="n">${un}</span><span class="k">Unclear</span></div>
+      <div><span class="n">${na}</span><span class="k">Not asked</span></div>
+      <div class="track" role="img" aria-label="${ok} answered, ${un} unclear, ${na} not asked of ${total}">
+        <span style="width:${pct(ok)};background:var(--ok)"></span><span style="width:${pct(un)};background:var(--warn)"></span>
+      </div>
+    </div>
+    <div class="callouts" id="callouts"></div>
+    <div id="fields"></div>
+    <div><span class="lab">Paste-ready statement</span><pre id="out"></pre></div>`;
+
+  const co = $("#callouts");
+  if (sugParty) {
+    const d = document.createElement("div"); d.className = "callout alert";
+    d.innerHTML = `<b>Check speaker</b><span class="txt"></span>`;
+    d.querySelector(".txt").textContent = `This statement seems to be from ${partyName[sugParty]}, not ${partyName[state.party]}. IV and CV are probably swapped below. ${sug.reason||""}`;
+    const b = document.createElement("button"); b.className = "btn sm"; b.textContent = "Fix and refill"; b.style.marginLeft = "auto";
+    b.onclick = () => { $("#party").value = sugParty; if (sugTpl) tplSel.value = sugTpl; sugAddons.forEach(a => $("#ad-"+a).checked = true); run(); };
+    d.append(b); co.append(d);
+  }
+  if (!sugParty && (sugTpl || sugAddons.length)) {
+    const d = document.createElement("div"); d.className = "callout suggest";
+    d.innerHTML = `<b>Suggestion</b><span class="txt"></span>`;
+    const parts = [];
+    if (sugTpl) parts.push(`switch to the ${TEMPLATES[sugTpl].name} template`);
+    if (sugAddons.length) parts.push(`add ${sugAddons.map(a => ADDONS[a].name.toLowerCase()).join(" and ")}`);
+    d.querySelector(".txt").textContent = `This call sounds like you should ${parts.join(" and ")}. ${sug.reason||""}`;
+    const b = document.createElement("button"); b.className = "btn sm"; b.textContent = "Apply and refill"; b.style.marginLeft = "auto";
+    b.onclick = () => { if (sugTpl) tplSel.value = sugTpl; sugAddons.forEach(a => $("#ad-"+a).checked = true); run(); };
+    d.append(b); co.append(d);
+  }
+  flags.forEach(f => {
+    const d = document.createElement("div"); d.className = "callout " + (f.level === "alert" ? "alert" : "info");
+    d.innerHTML = `<b>${f.level === "alert" ? "Review" : "Follow up"}</b><span class="txt"></span>`;
+    d.querySelector(".txt").textContent = f.text; co.append(d);
+  });
+  const ask = (res.ask_next||[]).filter(Boolean);
+  if (ask.length) {
+    const d = document.createElement("div"); d.className = "callout info";
+    d.innerHTML = `<b>Still ask</b><ol class="ask txt"></ol>`;
+    ask.forEach(q => { const li = document.createElement("li"); li.textContent = q; d.querySelector("ol").append(li); });
+    co.append(d);
+  }
+
+  const fw = $("#fields");
+  secs.forEach(s => {
+    const sec = document.createElement("div"); sec.className = "sec";
+    sec.innerHTML = `<h3>${esc(s.title)}</h3>`;
+    s.fields.forEach(f => {
+      const v = vals[f.id]; const st = !v || !v.v ? "na" : v.s === "unclear" ? "unclear" : "ok";
+      const row = document.createElement("div"); row.className = "f " + st; row.dataset.id = f.id;
+      row.innerHTML = `<span class="l">${esc(f.label)}</span><input type="text" id="in-${f.id}" aria-label="${esc(f.label)}"><span class="pill ${st}">${st==="na"?"Not asked":st==="unclear"?"Unclear":"Answered"}</span>`;
+      const inp = row.querySelector("input"); inp.value = st==="na" ? "" : v.v; inp.placeholder = "NOT ASKED";
+      inp.oninput = () => {
+        state.res.values[f.id] = inp.value.trim() ? { v: inp.value.toUpperCase(), s: "ok" } : undefined;
+        const p = row.querySelector(".pill"); const now = inp.value.trim() ? "ok" : "na";
+        row.className = "f " + now; p.className = "pill " + now; p.textContent = now==="ok" ? "Edited" : "Not asked";
+        writeOut();
+      };
+      sec.append(row);
+    });
+    fw.append(sec);
+  });
+  $("#copy").disabled = false; $("#tglMissing").disabled = false;
+  fw.classList.toggle("hide-ok", $("#tglMissing").getAttribute("aria-pressed") === "true");
+  writeOut();
+}
+
+function statementText(){
+  const { tplKey, secs, res, dir, party } = state; const t = TEMPLATES[tplKey]; const vals = res.values || {};
+  const name = (res.party_name || "[NAME]").toUpperCase();
+  const who = { INSD: "INSURED/DRIVER", CLMT: "CLAIMANT", ULD: "UNLISTED DRIVER" }[party];
+  const opener = party === "INSD" ? t.opener : `PLACED CALL TO ${who}/DRIVER`;
+  const lines = [`${dir}- ${party} ${name} STMT`, "", "STATEMENT TEMPLATE:", `${opener}:`];
+  secs.forEach((s,i) => {
+    if (i > 0) lines.push(".");
+    if (/business use|out of state|community|injury|work related|unlisted|policyholder|advisements/i.test(s.title)) lines.push(s.title.toUpperCase() + ":");
+    s.fields.forEach(f => { const v = vals[f.id]; lines.push(`${f.label}: ${v && v.v ? v.v : "NOT ASKED"}`); });
+  });
+  return lines.join("\n");
+}
+function writeOut(){ const o = $("#out"); if (o) o.textContent = statementText(); }
+
+$("#copy").onclick = async () => {
+  const txt = statementText();
+  try { await navigator.clipboard.writeText(txt); setStatus("Statement copied. Paste it into the Contact with Party note."); }
+  catch { const r = document.createRange(); r.selectNodeContents($("#out")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); setStatus("Statement selected. Press Ctrl+C to copy."); }
+};
+$("#tglMissing").onclick = e => {
+  const on = e.currentTarget.getAttribute("aria-pressed") !== "true";
+  e.currentTarget.setAttribute("aria-pressed", on); e.currentTarget.textContent = on ? "Show all fields" : "Show gaps only";
+  $("#fields")?.classList.toggle("hide-ok", on);
+};
+</script>
+
+</body>
+</html>
